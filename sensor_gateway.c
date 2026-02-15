@@ -13,11 +13,16 @@
 #include <errno.h>
 #include "common.h"
 
-sensor_info_t* sensors[MAX_SENSORS] = {NULL};
 pthread_t connect_thr, datamanager_thr, storagemanager_thr;
 pid_t child_pid;
+
+static void signal_handler(int sig) {
+    unlink("./log_fifo");
+    exit(0);
+}
+
 int main(int argc, const char* argv[]) {
-    signal(SIGCHLD, SIG_IGN);
+    signal(SIGINT, signal_handler);
     int status;
     char buffer[4096];
     if (mkfifo("./log_fifo", 0666) < 0)
@@ -71,7 +76,7 @@ int main(int argc, const char* argv[]) {
             printf("pthread_create() error number=%d\n", ret);
             return -1;
         }
-        ret = pthread_create(&datamanager_thr, NULL, data_manager_thread_handle, &thr_handle);
+        ret = pthread_create(&datamanager_thr, NULL, data_manager_thread_handler, &thr_handle);
         if (ret != 0) {
             printf("pthread_create() error number=%d\n", ret);
             return -1;
@@ -86,5 +91,7 @@ int main(int argc, const char* argv[]) {
         pthread_join(storagemanager_thr, NULL);
         wait(&status);
     }
+
+    unlink("./log_fifo");
     return 0;
 }
