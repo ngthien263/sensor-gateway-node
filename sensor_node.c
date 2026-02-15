@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <sys/time.h>
 #include "sensor_sender.h"
 #include "common.h"
 #include "shared_data.h"
@@ -46,6 +47,11 @@ int main(int argc, const char* argv[]){
     int status;
     struct sockaddr_in serv_addr;
     memset(&serv_addr, 0,sizeof(serv_addr));
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    srand((unsigned int)(tv.tv_sec ^ tv.tv_usec));
+
     if (argc < 3) {
         printf("command : ./client <server address> <port number>\n");
         exit(1);
@@ -64,7 +70,7 @@ int main(int argc, const char* argv[]){
     /* Create shared memory for communicating between parent and child process*/
     int shm_fd = shm_open("/temp", O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1)
-        handle_error("shm_open")
+        handle_error("shm_open");
     if (ftruncate(shm_fd, sizeof(shared_struct_t)) == -1)   
         handle_error("ftruncate");
     shared_struct_t* shr = mmap(0, sizeof(shared_struct_t), PROT_WRITE | PROT_READ, MAP_SHARED, shm_fd, 0);
