@@ -3,9 +3,10 @@
 #include "sensor_types.h"
 
 typedef struct sensor_node {
-    sensor_info_t info;
+    int id;
     struct sensor_node* next;
 } sensor_node_t;
+
 sensor_info_t sensor_init(int sensor_id);
 sensor_node_t* sensor_create(int sensor_id);
 void add_sensor(sensor_node_t** head_sensor, int sensor_id);
