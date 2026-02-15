@@ -2,70 +2,63 @@
 #include <string.h>      
 #include <sys/socket.h>         
 #include "linkedList.h"
+#include <errno.h>
 #include "common.h"
-    
-node* head = NULL;
-  
-void sensor_reader_init(sensor_info_t* self){
-    self->id = -1;                    
-    self->data.temperature = 0.0f;
-    self->data.humidity    = 0.0f;
-    memset(self->timestamp, 0, sizeof self->timestamp);
-    self->state.connected = false;
-    self->state.new_data = false;
+
+static void time_to_string(time_t t, char* buffer) {
+    struct tm timeinfo;
+    localtime_r(&t, &timeinfo);
+    snprintf(buffer, 64, "%02d:%02d:%02d",
+             timeinfo.tm_hour,
+             timeinfo.tm_min,
+             timeinfo.tm_sec);
 }
 
-void sensor_reader_cleanup(sensor_info_t* self){
-    free(self);
-}
+int sensor_read(sensor_info_t* sensor, int socket_fd){
+    sensor_packet_t pkt;
+    ssize_t recv_bytes;
+    int empty_index = -1;
+    size_t total_read = 0;
 
-static void __read_fifo(int socket_fd){
-    char recvbuff[BUFF_SIZE];
-    memset(recvbuff, 0, BUFF_SIZE);
-    if (recv(socket_fd, recvbuff, BUFF_SIZE, 0) < 0)
-        handle_error("read()");
-    char *line = strtok(recvbuff, "\n");
-    while (line != NULL) {
-        sensor_info_t recv_info;
-        sscanf(line, "%s - ID: %dTemp: %f Humid: %f\n", recv_info.timestamp,
-                                                        &recv_info.id,
-                                                        &recv_info.data.temperature,
-                                                        &recv_info.data.humidity);
-        pushBack(&head, recv_info);
-        line = strtok(NULL, "\n");
+    char* ptr = (char*)&pkt;
+
+    while(total_read < sizeof(sensor_packet_t)) {
+        recv_bytes = recv(socket_fd, ptr + total_read, sizeof(sensor_packet_t) - total_read,0);
+        if (recv_bytes == 0) {
+            return -1; 
+        }
+        if (recv_bytes < 0) {
+            perror("recv");
+            return -1;
+        }
+        total_read += recv_bytes;
     }
-}
 
-sensor_info_t* sensor_reader_create(void){
-   sensor_info_t* sensor = (sensor_info_t*)malloc(sizeof(sensor_info_t));
-   if(sensor != NULL){
-        sensor_reader_init(sensor);
-   }
-   return sensor;
-}
+    for (int i = 0; i < MAX_SENSORS; i++) {
+        if (sensor[i].state.connected && sensor[i].id == pkt.id) {
+            sensor[i].data = pkt.data;
+            time_to_string((time_t)pkt.timestamp,
+                        sensor[i].timestamp);
 
+            return 0; 
+        }
 
-void sensor_read(sensor_info_t** sensors, int socket_fd){
-    __read_fifo(socket_fd);
-    while(head != NULL) {
-        sensor_info_t temp;
-        popFront(&head, &temp);
-        for(int i = 0; i < MAX_SENSORS; i++){
-            if(!sensors[i]){
-                sensors[i] = sensor_reader_create();
-                sensors[i]->id = temp.id;
-                sensors[i]->data = temp.data;
-                strcpy(sensors[i]->timestamp, temp.timestamp);
-                sensors[i]->state.new_data = false;
-                break;
-            } else {
-                if(sensors[i]->id == temp.id){
-                    sensors[i]->data = temp.data;
-                    strcpy(sensors[i]->timestamp, temp.timestamp);
-                    sensors[i]->state.new_data = false;
-                    break;
-                }
-            }
+        if (!sensor[i].state.connected && empty_index == -1) {
+            empty_index = i;
         }
     }
+
+    if (empty_index != -1) {
+        sensor[empty_index].id = pkt.id;
+        sensor[empty_index].data = pkt.data;
+        sensor[empty_index].state.new = true;
+        sensor[empty_index].state.connected = true;
+
+        time_to_string((time_t)pkt.timestamp,
+                    sensor[empty_index].timestamp);
+
+        return 0;
+    }
+
+    return -1;
 }
