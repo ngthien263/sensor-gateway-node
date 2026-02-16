@@ -13,7 +13,6 @@ make_dir:
 	mkdir -p $(OBJ_DIR) $(BIN_DIR)
 create_obj:
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/database.c -o $(OBJ_DIR)/database.o
-	$(CC) $(CFLAGS) -c $(SRC_DIR)/linkedList.c -o $(OBJ_DIR)/linkedList.o
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/socket.c -o $(OBJ_DIR)/socket.o
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/sensor_reader.c -o $(OBJ_DIR)/sensor_reader.o
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/sensor_sender.c -o $(OBJ_DIR)/sensor_sender.o
@@ -23,8 +22,8 @@ create_obj:
 	$(CC) $(CFLAGS) -c $(CUR_PATH)/sensor_node.c -o $(OBJ_DIR)/sensor_node.o 
 
 all: make_dir create_obj 
-	$(CC) -g $(CFLAGS) $(OBJ_DIR)/linkedList.o $(OBJ_DIR)/socket.o $(OBJ_DIR)/sensor_reader.o $(OBJ_DIR)/sensor_gateway.o $(OBJ_DIR)/thread_handle.o $(OBJ_DIR)/database.o -o $(BIN_DIR)/sensor_gateway -lpthread -lsqlite3
-	$(CC) -g $(CFLAGS) $(OBJ_DIR)/linkedList.o $(OBJ_DIR)/socket.o $(OBJ_DIR)/sensor_sender.o $(OBJ_DIR)/sensor_node.o -o $(BIN_DIR)/sensor_node -lpthread -lsqlite3
+	$(CC) -g $(CFLAGS) $(OBJ_DIR)/socket.o $(OBJ_DIR)/sensor_reader.o $(OBJ_DIR)/sensor_gateway.o $(OBJ_DIR)/thread_handle.o $(OBJ_DIR)/database.o -o $(BIN_DIR)/sensor_gateway -lpthread -lsqlite3
+	$(CC) -g $(CFLAGS) $(OBJ_DIR)/socket.o $(OBJ_DIR)/sensor_sender.o $(OBJ_DIR)/sensor_node.o -o $(BIN_DIR)/sensor_node -lpthread -lsqlite3
 
 clean:
 	rm -rf $(BIN_DIR)/*

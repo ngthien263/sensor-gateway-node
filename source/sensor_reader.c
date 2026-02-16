@@ -1,7 +1,6 @@
 #include "sensor_reader.h"
 #include <string.h>      
 #include <sys/socket.h>         
-#include "linkedList.h"
 #include <errno.h>
 #include "common.h"
 

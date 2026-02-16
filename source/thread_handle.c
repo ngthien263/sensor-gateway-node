@@ -40,17 +40,25 @@ void* connect_thread_handler(void* args){
     pthread_exit(NULL);
 }
 
-float avg_temp;
-float avg_humid;
+
 
 void* data_manager_thread_handler(void* args){
     thr_handle_t* handle = (thr_handle_t*)args;
+    float avg_temp;
+    float avg_humid;
     char buffer[1024];
+
     int f_fd = open("./log_fifo", O_WRONLY);
     if(f_fd < 0)   handle_error("open fifo");
     
-    struct storage {int id; float temp; float humid; int division; bool new_data;};
+    struct storage {
+        int id; 
+        float temp; 
+        float humid; 
+        int division;
+    };
     static struct storage storage_arr[MAX_SENSORS];
+    
     while(1){
         pthread_mutex_lock(&handle->mlock); 
         while(!data_ready_dmng_thr)

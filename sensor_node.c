@@ -26,8 +26,36 @@
 #include "common.h"
 #include "shared_data.h"
 
+
+static int connect_to_server(const char* ip, const char* port, struct sockaddr_in* serv_addr) {
+    int ret;
+    int port_no;
+    int server_fd;
+
+    port_no = atoi(port);
+    serv_addr->sin_family =  AF_INET;
+    serv_addr->sin_port   = htons(port_no);
+    inet_pton(AF_INET, ip, &serv_addr->sin_addr);
+    
+
+    while (1) {
+        server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        ret = connect(server_fd, (struct sockaddr *)serv_addr, sizeof(*serv_addr));
+        if (ret == 0) {
+            printf("Connect to server successfully\n");
+            return server_fd;
+        }
+
+        perror("connect failed");
+        close(server_fd);
+        printf("Retrying in 2 seconds...\n");
+        sleep(2);
+    }
+}
+
+
 /* Menu UI - will update in the future: dump, ... */
-void print_menu() {
+static void print_menu() {
     printf("\n  ╔═════════════════════════════════════╗\n");
     printf("  ║           SENSOR MAIN MENU          ║\n");
     printf("  ╠═════════════════════════════════════╣\n");
@@ -41,7 +69,6 @@ void print_menu() {
 int main(int argc, const char* argv[]){
     //Initialize
     int choice;
-    int port_no;
     int server_fd;
     int sensor_id;
     int status;
@@ -56,16 +83,10 @@ int main(int argc, const char* argv[]){
         printf("command : ./client <server address> <port number>\n");
         exit(1);
     }
-    port_no = atoi(argv[2]);
-    serv_addr.sin_family =  AF_INET;
-    serv_addr.sin_port   = htons(port_no);
-    if (inet_pton(AF_INET, argv[1], &serv_addr.sin_addr) == -1) 
-        handle_error("inet_pton()");
+
 
      /* Create TCP socket and connect to gateway */
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(connect(server_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1)
-        handle_error("connect()");
+    server_fd = connect_to_server(argv[1], argv[2], &serv_addr);
 
     /* Create shared memory for communicating between parent and child process*/
     int shm_fd = shm_open("/temp", O_CREAT | O_RDWR, 0666);
@@ -79,6 +100,8 @@ int main(int argc, const char* argv[]){
 
     /* Initialize unnamed semaphore in shared memory to get command from user input*/
     sem_init(&shr->sem, 1, 0);
+
+    signal(SIGPIPE, SIG_IGN);
 
     /*Fork*/
     pid_t child_pid = fork();
@@ -101,7 +124,11 @@ int main(int argc, const char* argv[]){
                 shr->has_command = 0;
             }
             //Send data from sensor after 1 second
-            sensor_send_message(&head, server_fd);
+            if (sensor_send_message(&head, server_fd) < 0) {
+                printf("Connection lost. Attempting reconnect...\n");
+                close(server_fd);
+                server_fd = connect_to_server(argv[1], argv[2], &serv_addr);
+            }
             sleep(1);
         }
         close(server_fd);

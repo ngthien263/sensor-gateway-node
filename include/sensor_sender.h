@@ -12,5 +12,5 @@ sensor_node_t* sensor_create(int sensor_id);
 void add_sensor(sensor_node_t** head_sensor, int sensor_id);
 void rm_sensor(sensor_node_t** head_sensor, int sensor_id);
 void dump_sensor(sensor_node_t** head_sensor);
-void sensor_send_message(sensor_node_t** sensor_head, int server_fd);
+int sensor_send_message(sensor_node_t** sensor_head, int server_fd);
 #endif

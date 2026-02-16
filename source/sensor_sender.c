@@ -60,16 +60,19 @@ static void generate_packet(int id, sensor_packet_t* pkt)
     pkt->data.humidity    = rand() % 100 + 1;
 }
 
-void sensor_send_message(sensor_node_t** sensor_head, int server_fd) {
+int sensor_send_message(sensor_node_t** sensor_head, int server_fd) {
+    int ret;
     sensor_packet_t pkt;
     
     sensor_node_t* curr = *sensor_head;
     while(curr != NULL){
         generate_packet(curr->id, &pkt);
-
-        if(write(server_fd, &pkt, sizeof(pkt)) != sizeof(pkt))
-            handle_error("write()");
-        
+        ret = write(server_fd, &pkt, sizeof(pkt));
+        if(ret != sizeof(pkt)) {
+            perror("write()");
+            ret = -1;
+        }
         curr = curr->next;
     }
+    return ret;
 }
