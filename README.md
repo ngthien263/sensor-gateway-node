@@ -106,7 +106,7 @@ make clean
 
 ---
 
-## 🚀 Usage
+## Usage
 
 ### 1. Start the Gateway (Server)
 
@@ -151,7 +151,7 @@ Each virtual sensor you add will start transmitting randomized temperature and h
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 Sensor state is stored in `sensors.db` using the following table:
 
@@ -169,7 +169,7 @@ Readings are **upserted** on every update — inserting new sensors on first con
 
 ---
 
-## 📋 Logging
+## Logging
 
 All runtime events are written to `gateway.log` via a named FIFO pipe. Example entries:
 
@@ -190,7 +190,7 @@ Temperature thresholds:
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 Key constants are defined in `include/sensor_types.h`:
 
@@ -203,7 +203,7 @@ Key constants are defined in `include/sensor_types.h`:
 
 ---
 
-## 🛠️ Key Concepts & IPC Mechanisms
+## Key Concepts & IPC Mechanisms
 
 | Mechanism | Used For |
 |---|---|
@@ -217,6 +217,4 @@ Key constants are defined in `include/sensor_types.h`:
 
 ---
 
-## 📝 License
-
-This project is open-source and available under the [MIT License](LICENSE).
+## License
